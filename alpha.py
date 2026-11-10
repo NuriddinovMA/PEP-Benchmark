@@ -9,15 +9,15 @@ import pandas as pd
 from Bio import SeqIO
 
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
-parser.add_argument('--regulome','-r', default="pep/EP.GRCh38-c.tsv", help="he path to files with p-e pairs")
-parser.add_argument('--ref_genome','-g', default="hg38/hg38.fa", help="the path to a genome file")
-parser.add_argument('--out','-o', default="alpha_score", help="the path to output dirs")
+parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="he path to files with p-e pairs")
+parser.add_argument('--ref_genome','-g', default="genomes/hg38.fa", help="the path to a genome file")
+parser.add_argument('--out','-o', default="alpha_score", help="the file name for the output")
 parser.add_argument('--batch','-b', type=int, default=100, help="the number of sequence in batch")
 parser.add_argument('--threads','-t', type=int, default=5, help="the threads count")
 parser.add_argument('--step','-s', type=int, default=0, help="from which PE-pair must start the prediction. PEP = batch*step")
 parser.add_argument('--end','-e', type=int, default=False, help="on which PE-pair must end the prediction. PEP = batch*end")
 parser.add_argument('--window','-w', choices=[1048576, 524288, 131072,16384], type=int, help="the length of sequence to prediction")
-parser.add_argument('--use_dropped','-u', action='store_true', help="list of dirs with aligned TE reads")
+parser.add_argument('--use_dropped','-u', action='store_true', help="if true, use the peps even the enhancer don't fall in window")
 args=parser.parse_args()
 
 API_KEY = 'AIzaSyBiTXcVfXvNx5N1Fz0TF3_8XyiWkAKI2AQ'
@@ -117,5 +117,5 @@ for step in range(args.step, args.end):
 	elif e2: df = df_dropped
 	else: break
 	
-	df.to_csv(f'{args.out}.{step}.2.tsv',sep='\t',index=False)
+	df.to_csv(f'scores/{args.out}.{step}.tsv',sep='\t',index=False)
 	del df_scored, df_short, df
