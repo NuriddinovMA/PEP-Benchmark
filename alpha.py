@@ -1,7 +1,3 @@
-from alphagenome.data import genome
-from alphagenome.models import dna_client
-from alphagenome.models import variant_scorers
-
 import sys
 import argparse
 import numpy as np
@@ -9,19 +5,35 @@ import pandas as pd
 from Bio import SeqIO
 
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
-parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="he path to files with p-e pairs")
+parser.add_argument('--version','-v', type=int, choices=[1,2], help="he path to files with p-e pairs")
+parser.add_argument('--regulome','-r', default="pep/EP.GRCh38-c.tsv", help="he path to files with p-e pairs")
+parser.add_argument('--fold','-f', type=int, default=0, help="model version of alphagenome")
 parser.add_argument('--ref_genome','-g', default="genomes/hg38.fa", help="the path to a genome file")
-parser.add_argument('--out','-o', default="alpha_score", help="the file name for the output")
+parser.add_argument('--out','-o', default="alpha_score", help="the path to output dirs")
 parser.add_argument('--batch','-b', type=int, default=100, help="the number of sequence in batch")
 parser.add_argument('--threads','-t', type=int, default=5, help="the threads count")
 parser.add_argument('--step','-s', type=int, default=0, help="from which PE-pair must start the prediction. PEP = batch*step")
 parser.add_argument('--end','-e', type=int, default=False, help="on which PE-pair must end the prediction. PEP = batch*end")
-parser.add_argument('--window','-w', choices=[1048576, 524288, 131072,16384], type=int, help="the length of sequence to prediction")
-parser.add_argument('--use_dropped','-u', action='store_true', help="if true, use the peps even the enhancer don't fall in window")
+parser.add_argument('--window','-w', choices=[1048576, 524288, 131072,16384], default=1048576, type=int, help="the length of sequence to prediction")
+parser.add_argument('--use_dropped','-u', action='store_true', help="list of dirs with aligned TE reads")
+parser.add_argument('--centered','-c', choices=['tss', 'mut', 'mid'], default='tss', help="list of dirs with aligned TE reads")
 args=parser.parse_args()
 
+from alphagenome.data import genome
+if args.version == 1:
+	from alphagenome.models.v1 import dna_client
+	from alphagenome.models.v1 import variant_scorers
+elif args.version == 2:
+	from alphagenome.models.v2 import dna_client
+	from alphagenome.models.v2 import variant_scorers
+else:
+	print(f'verison {args.version} dont exist!!!')
+	exit()
+
+
 API_KEY = 'AIzaSyBiTXcVfXvNx5N1Fz0TF3_8XyiWkAKI2AQ'
-model = dna_client.create(API_KEY)
+model_fold = dna_client.ModelVersion(args.fold)
+model = dna_client.create(API_KEY,model_version=model_fold)
 window = args.window // 2
 batch = args.batch
 FA = SeqIO.to_dict(SeqIO.parse(args.ref_genome, 'fasta'))
@@ -34,7 +46,11 @@ for line in lines:
 	start_ep, end_ep, mut_start, start_tss, end_tss = int(start_ep), int(end_ep), int(mut_start),int(start_tss), int(end_tss)
 	if parse[12] == "TRUE": regulate = 1
 	else: regulate = 0
-	if args.use_dropped or ((start_tss-window < mut_start) and (start_tss+window > mut_start+2000)):
+	if args.centered == 'mid': 
+		mid = (start_tss + mut_start + 1000) // 2
+		T = ( abs( start_tss - mut_start ) + 4000 < 2*window )
+	else: T = ((start_tss-window < mut_start) and (start_tss+window > mut_start+2000))
+	if args.use_dropped or T:
 		eps_hash[gene_id,start_tss,start_ep] = ( chr_tss, start_tss, chrm_ep, mut_start, regulate)
 
 gene_ids = sorted(eps_hash)
@@ -51,10 +67,24 @@ for step in range(args.step, args.end):
 	variants,intervals,scored_intervals = [],[],[]
 	for gene_id,start_tss,start_ep in gene_ids[(step*batch):((step+1)*batch)]:
 		chr_tss, start_tss, chrm_ep, mut_start, regulate = eps_hash[gene_id,start_tss,start_ep ]
-		if (mut_start > start_tss-window) and (start_tss+window > mut_start+2000):
-			scored_interval = f"{chr_tss}:{start_tss-window}-{start_tss+window}:."
-			scored_intervals.append( (gene_id, scored_interval) )
-			interval = genome.Interval(chromosome=chr_tss, start=start_tss-window, end=start_tss+window)
+		if args.centered == 'mid': 
+			mid = (start_tss + mut_start + 1000) // 2
+			T = ( abs( start_tss - mut_start ) + 4000 < 2*window )
+		else: T = ((start_tss-window < mut_start) and (start_tss+window > mut_start+2000))
+		
+		if T:
+			if args.centered == 'tss':
+				scored_interval = f"{chr_tss}:{start_tss-window}-{start_tss+window}:."
+				scored_intervals.append( (gene_id, scored_interval) )
+				interval = genome.Interval(chromosome=chr_tss, start=start_tss-window, end=start_tss+window)
+			elif args.centered == 'mut':
+				scored_interval = f"{chr_tss}:{mut_start+1000-window}-{mut_start+1000+window}:."
+				scored_intervals.append( (gene_id, scored_interval) )
+				interval = genome.Interval(chromosome=chr_tss, start=mut_start+1000-window, end=mut_start+1000+window)
+			else:
+				scored_interval = f"{chr_tss}:{mid-window}-{mid+window}:."
+				scored_intervals.append( (gene_id, scored_interval) )
+				interval = genome.Interval(chromosome=chr_tss, start=mid-window, end=mid+window)
 			print(f"{chrm_ep}:{mut_start}-{mut_start+2000} {chr_tss}:{start_tss-window}-{start_tss+window}",file=sys.stderr)
 			reference = str(FA[chrm_ep].seq[(mut_start):(mut_start+2000)]).upper()
 			shuffled = np.array([list(reference)]*10)
@@ -117,5 +147,5 @@ for step in range(args.step, args.end):
 	elif e2: df = df_dropped
 	else: break
 	
-	df.to_csv(f'scores/{args.out}.{step}.tsv',sep='\t',index=False)
+	df.to_csv(f'{args.out}.{step}.{args.centered}.tsv',sep='\t',index=False)
 	del df_scored, df_short, df
