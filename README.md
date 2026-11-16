@@ -3,11 +3,11 @@ The Benchmark of Promoter-Enhancer interaction prediction by AlphaGenome
 dependencies:
 - python == 3.13.13
 - alphagenome == 0.6.1
-- biopython == 1.8.7
-- numpy == 2.4.6
-- pandas == 2.3.3
+- biopython >= 1.8.7
+- numpy >= 2.4.6
+- pandas >= 2.3.3
 - scikit-learn == 1.9.1
-- matplotlib == 3.10.9
+- matplotlib >= 3.10.9
 
 # Run step-by-step
 1) Clone repository:
