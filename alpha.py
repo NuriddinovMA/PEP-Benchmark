@@ -1,6 +1,6 @@
 import sys
 import argparse
-import importlib
+import importlib.metadata
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
