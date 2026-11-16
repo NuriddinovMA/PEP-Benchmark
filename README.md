@@ -16,7 +16,10 @@ dependencies:
    cd PEP-Benchmark
    ```
    
-3) install dependenciyes.
+3) install dependenciyes:
+   ```
+   conda install -n [you environment name] --file environment.yml 
+   ```
 4) download the hg38 genome and put it to the genomes folder. The genome used for this benchmark is available on [repository](https://genedev.bionet.nsc.ru/ftp/by_Project/alphagenome/genomes/)
 5) generate you unique api key for excess to Alphagenome API (see: [Alphagenome documentaion](https://www.alphagenomedocs.com/installation.html) )
 6) run alpha.py to generate variant scores for promoter-enhancer pairs
