@@ -7,7 +7,7 @@ dependencies:
 - numpy == 2.4.6
 - pandas == 2.3.3
 - scikit-learn == 1.9.1
-- matplotlib
+- matplotlib == 3.10.9
 
 # Run step-by-step
 1) Clone repository:
