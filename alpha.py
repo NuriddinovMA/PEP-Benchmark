@@ -1,28 +1,37 @@
 import sys
 import argparse
+import importlib
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
 
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
-parser.add_argument('--version','-v', type=int, choices=[1,2], help="he path to files with p-e pairs")
-parser.add_argument('--regulome','-r', default="pep/EP.GRCh38-c.tsv", help="he path to files with p-e pairs")
-parser.add_argument('--fold','-f', type=int, default=0, help="model version of alphagenome")
+parser.add_argument('--api_key', default=None, help="YOUR API_KEY for alphagenome API")
+parser.add_argument('--version','-v', type=int, choices=[1,2], default=1, help="he path to files with P-E pairs")
+parser.add_argument('--regulome','-r', default="pep/EP.GRCh38-c.tsv", help="he path to files with P-E pairs")
 parser.add_argument('--ref_genome','-g', default="genomes/hg38.fa", help="the path to a genome file")
 parser.add_argument('--out','-o', default="alpha_score", help="the path to output dirs")
-parser.add_argument('--batch','-b', type=int, default=100, help="the number of sequence in batch")
+parser.add_argument('--batch','-b', type=int, default=30, help="the number of sequence in batch")
 parser.add_argument('--threads','-t', type=int, default=5, help="the threads count")
-parser.add_argument('--step','-s', type=int, default=0, help="from which PE-pair must start the prediction. PEP = batch*step")
-parser.add_argument('--end','-e', type=int, default=False, help="on which PE-pair must end the prediction. PEP = batch*end")
+parser.add_argument('--step','-s', type=int, default=0, help="from which P-E pair must start the prediction: p-e pair index = batch*step")
+parser.add_argument('--end','-e', type=int, default=False, help="on which P-E pair must end the prediction: p-e pair index = batch*end")
 parser.add_argument('--window','-w', choices=[1048576, 524288, 131072,16384], default=1048576, type=int, help="the length of sequence to prediction")
-parser.add_argument('--use_dropped','-u', action='store_true', help="list of dirs with aligned TE reads")
-parser.add_argument('--centered','-c', choices=['tss', 'mut', 'mid'], default='tss', help="list of dirs with aligned TE reads")
+parser.add_argument('--use_dropped','-u', action='store_true', help="use P-E pairs that out from alphagenome window")
+parser.add_argument('--fold','-f', type=int, default=0, help="model version of alphagenome")
+parser.add_argument('--centered','-c', choices=['tss', 'mut', 'mid'], default='tss', help="the center of intervall: tss - the gene tss; mut - the mutation region center; mid - the midpoint between tss and mutaion")
+parser.add_argument('--seed', default=None, help="seed for sequence randomization")
 args=parser.parse_args()
 
-from alphagenome.data import genome
+alphaversion = importlib.metadata.version('alphagenome')
+print(f'alphagenome version {alphaversion}')
+
 if args.version == 1:
-	from alphagenome.models.v1 import dna_client
-	from alphagenome.models.v1 import variant_scorers
+	if alphaversion == '0.6.1':
+		from alphagenome.models import dna_client
+		from alphagenome.models import variant_scorers
+	else:
+		from alphagenome.models.v1 import dna_client
+		from alphagenome.models.v1 import variant_scorers
 elif args.version == 2:
 	from alphagenome.models.v2 import dna_client
 	from alphagenome.models.v2 import variant_scorers
@@ -30,8 +39,7 @@ else:
 	print(f'verison {args.version} dont exist!!!')
 	exit()
 
-
-API_KEY = 'AIzaSyBiTXcVfXvNx5N1Fz0TF3_8XyiWkAKI2AQ'
+API_KEY = args.api_key
 model_fold = dna_client.ModelVersion(args.fold)
 model = dna_client.create(API_KEY,model_version=model_fold)
 window = args.window // 2

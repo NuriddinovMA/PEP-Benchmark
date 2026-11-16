@@ -6,12 +6,12 @@ import sklearn.metrics as skm
 
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
 parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="the path to files with p-e pairs")
-parser.add_argument('--name','-n', default="alpha_score", help="the base file name for generated predictions")
+parser.add_argument('--name','-n', default="alpha_score", help="the base file name for generated predictionss")
 parser.add_argument('--out','-o', default="alpha_auc", help="the file name for the output")
-rgs=parser.parse_args()
+args=parser.parse_args()
 
 train = args.regulome
-prediction = args.name
+predictions = args.name
 
 Train = {}
 with open(train,'r') as f: lines = f.readlines()
@@ -28,7 +28,7 @@ for line in lines[1:]:
 
 Pred = {}
 all_raw_score, all_perc_score = [],[]
-files = glob.glob(f'scores/{prediction}.*.tsv')
+files = glob.glob(f'scores/{predictions}.*.tsv')
 for file in files:
 	with open(f"scores/{file},'r') as f: lines = f.readlines()
 	for line in lines[:]:
