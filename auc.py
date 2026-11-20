@@ -6,10 +6,11 @@ import sklearn.metrics as skm
 
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
 parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="the path to files with p-e pairs")
+parser.add_argument('--path','-p', default="scores", help="the file name for the output")
 parser.add_argument('--name','-n', default="alpha2_score", help="the base file name for generated predictionss")
 parser.add_argument('--min_dists','-m', nargs='*', type=int,default=[0], help="the base file name for generated predictionss")
 parser.add_argument('--max_dists','-M', nargs='*', type=int,default=[2500000], help="the base file name for generated predictionss")
-parser.add_argument('--path','-p', default="scores", help="the file name for the output")
+parser.add_argument('--out','-o', default="alpha2_auc", help="the file name for the output")
 args=parser.parse_args()
 
 train = args.regulome
