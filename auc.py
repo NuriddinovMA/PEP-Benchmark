@@ -7,6 +7,8 @@ import sklearn.metrics as skm
 parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
 parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="the path to files with p-e pairs")
 parser.add_argument('--name','-n', default="alpha_score", help="the base file name for generated predictionss")
+parser.add_argument('--min_dist','-m', type=int,default=0, help="the base file name for generated predictionss")
+parser.add_argument('--max_dist','-M', type=int,default=2500000, help="the base file name for generated predictionss")
 parser.add_argument('--out','-o', default="alpha_auc", help="the file name for the output")
 args=parser.parse_args()
 
@@ -22,7 +24,7 @@ for line in lines[1:]:
 	dist = int(parse[9])
 	if parse[11] == "TRUE": regulate = 1
 	else: regulate = 0
-	if dist < 6000:
+	if args.max_dist >= dist >= args.min_dist:
 		try: Train[gene_id][chrm_ep, mut_start] = regulate
 		except KeyError: Train[gene_id] = {(chrm_ep, mut_start): regulate}
 
@@ -30,7 +32,7 @@ Pred = {}
 all_raw_score, all_perc_score = [],[]
 files = glob.glob(f'scores/{predictions}.*.tsv')
 for file in files:
-	with open(f"scores/{file},'r') as f: lines = f.readlines()
+	with open(f"scores/{file}",'r') as f: lines = f.readlines()
 	for line in lines[:]:
 		gene_id, chrm_center, chrm_locus, raw_score, perc_score = line.split()
 		# print(line, raw_score, perc_score)
