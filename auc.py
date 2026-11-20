@@ -42,6 +42,7 @@ for line in lines[1:]:
 Pred = {}
 all_raw_score, all_perc_score = [],[]
 files = glob.glob(f'{args.path}/{args.name}.*.tsv')
+print(files)
 for file in files:
 	with open(f"{file}",'r') as f: lines = f.readlines()
 	for line in lines[1:]:
