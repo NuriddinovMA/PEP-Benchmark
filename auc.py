@@ -96,5 +96,5 @@ for i,(min_dist,max_dist) in enumerate(dists_list):
 	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,prc_perc)
 	auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
 	with open(f"{args.path}/{args.out}.tsv") as f:
-		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring}\n")
+		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring\n")
 		f.write(f"auc\t{auc_raw}\t{auc_perc}\n")
