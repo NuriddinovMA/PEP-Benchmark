@@ -69,7 +69,7 @@ FN_all = []
 FP_all = []
 
 out=open(f"{args.path}/{args.out}.tsv",'w')
-out.write(f"metric\tdistances\traw_variant_scoring\n")
+out.write(f"metric\tdistances\traw_variant_scoring\tperc_variant_scoring\n")
 reg = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
 score_raw = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
 score_perc = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
@@ -93,9 +93,8 @@ for gene_id in Train:
 "recll = TP / (TP + FN)"
 
 for i,(min_dist,max_dist) in enumerate(dists_list):
-	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,score_raw)
-	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,score_perc)
+	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg[min_dist,max_dist],score_raw[min_dist,max_dist])
+	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg[min_dist,max_dist],score_perc[min_dist,max_dist])
 	auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
-	with open(f"{args.path}/{args.out}.tsv") as f:
-		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring\n")
-		f.write(f"auc\t{auc_raw}\t{auc_perc}\n")
+	out.write(f"auc\t{min_dist}-{max_dist}\t{auc_raw}\t{auc_perc}\n")
+out.close()
