@@ -44,7 +44,7 @@ all_raw_score, all_perc_score = [],[]
 files = glob.glob(f'{args.path}/{args.name}.*.tsv')
 for file in files:
 	with open(f"{file}",'r') as f: lines = f.readlines()
-	for line in lines[:]:
+	for line in lines[1:]:
 		gene_id, chrm_center, chrm_locus, raw_score, perc_score = line.split()
 		raw_score, perc_score = float(raw_score), float(perc_score)
 		chrm_ep,center = chrm_center.split(':')
