@@ -4,19 +4,16 @@ import argparse
 import numpy as np
 import sklearn.metrics as skm
 
-
-parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
-parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="the path to files with p-e pairs")
-parser.add_argument('--name','-n', default="alpha_score", help="the base file name for generated predictionss")
-parser.add_argument('--min_dist','-m', type=int,default=0, help="the base file name for generated predictionss")
-parser.add_argument('--max_dist','-M', type=int,default=2500000, help="the base file name for generated predictionss")
-parser.add_argument('--out','-o', default="alpha_auc", help="the file name for the output")
-args=parser.parse_args()
-
-train = args.regulome
+rain = args.regulome
 predictions = args.name
+min_dists = args.min_dists
+max_dists = args.max_dists
+ln_dists = len(min_dists)
 
-Train = {}
+assert len(min_dists) == len(max_dists)
+
+dists_list = [(min_dists[i],max_dists[i]) for i in range(ln_dists)]
+Train,Dists = {},{}
 with open(train,'r') as f: lines = f.readlines()
 for line in lines[1:]:
 	parse = line.split()
@@ -25,9 +22,13 @@ for line in lines[1:]:
 	dist = int(parse[9])
 	if parse[11] == "TRUE": regulate = 1
 	else: regulate = 0
-	if args.max_dist >= dist >= args.min_dist:
-		try: Train[gene_id][chrm_ep, mut_start] = regulate
-		except KeyError: Train[gene_id] = {(chrm_ep, mut_start): regulate}
+	try: 
+		Train[gene_id][chrm_ep, mut_start] = regulate
+		Dists[gene_id][chrm_ep, mut_start] = dist
+	except KeyError: 
+		Train[gene_id] = {(chrm_ep, mut_start): regulate }
+		Dists[gene_id] = {(chrm_ep, mut_start): dist }
+
 
 Pred = {}
 all_raw_score, all_perc_score = [],[]
@@ -57,31 +58,35 @@ for gene_id in Pred:
 TP_all = []
 FN_all = []
 FP_all = []
-raw_step = np.max(all_raw_score)/100.
-perc_step = np.max(all_perc_score)/100.
-reg,prc_raw,prc_perc = [],[],[]
-posit_gene,posit_enh = [],[]
+
+out=open(f"scores/{args.out}.tsv",'w')
+out.write(f"metric\tdistances\traw_variant_scoring\n")
+reg = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
+score_raw = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
+score_perc = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
+
 for gene_id in Train:
 	for chrm_ep,center in Train[gene_id]:
 		regulate = Train[gene_id][chrm_ep,center]
-		try: 
-			Pred[gene_id]
-			try: 
-				raw_effect, perc_effect = Pred[gene_id][chrm_ep,center]
-				prc_raw.append(raw_effect)
-				prc_perc.append(perc_effect)
-				reg.append(regulate)
-			except KeyError: print(gene_id,Pred[gene_id],chrm_ep,center,file=sys.stderr)
-		except KeyError: print(gene_id,chrm_ep,center)
-
+		dist = Dists[gene_id][chrm_ep,center]
+		for i,(min_dist,max_dist) in enumerate(dists_list):
+			if min_dist <= dist <= max_dist:
+				try: 
+					Pred[gene_id]
+					try: 
+						raw_effect,perc_effect = Pred[gene_id][chrm_ep,center]
+						score_raw[min_dist,max_dist].append(raw_effect)
+						score_perc[min_dist,max_dist].append(perc_effect)
+						reg[min_dist,max_dist].append(regulate)
+					except KeyError: print(gene_id,Pred[gene_id],chrm_ep,center,file=sys.stderr)
+				except KeyError: print(gene_id,chrm_ep,center)
 "precn = TP / (TP + FP)"
 "recll = TP / (TP + FN)"
 
-precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,prc_raw)
-precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,prc_perc)
-auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
-with open(f"scores/{args.out}.tsv") as f:
-	f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring}\n")
-	f.write(f"presicion\t{precision_raw}\t{precision_perc}\n")
-	f.write(f"recall\t{recall_raw}\t{recall_perc}\n")
-	f.write(f"auc\t{auc_raw}\t{auc_perc}\n")
+for i,(min_dist,max_dist) in enumerate(dists_list):
+	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,prc_raw)
+	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,prc_perc)
+	auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
+	with open(f"scores/{args.out}.tsv") as f:
+		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring}\n")
+		f.write(f"auc\t{auc_raw}\t{auc_perc}\n")
