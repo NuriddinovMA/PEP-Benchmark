@@ -93,8 +93,8 @@ for gene_id in Train:
 "recll = TP / (TP + FN)"
 
 for i,(min_dist,max_dist) in enumerate(dists_list):
-	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,prc_raw)
-	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,prc_perc)
+	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,score_raw)
+	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,score_perc)
 	auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
 	with open(f"{args.path}/{args.out}.tsv") as f:
 		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring\n")
