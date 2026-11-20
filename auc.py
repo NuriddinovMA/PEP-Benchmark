@@ -42,7 +42,6 @@ for line in lines[1:]:
 Pred = {}
 all_raw_score, all_perc_score = [],[]
 files = glob.glob(f'{args.path}/{args.name}.*.tsv')
-print(files)
 for file in files:
 	with open(f"{file}",'r') as f: lines = f.readlines()
 	for line in lines[1:]:
@@ -88,8 +87,8 @@ for gene_id in Train:
 						score_raw[min_dist,max_dist].append(raw_effect)
 						score_perc[min_dist,max_dist].append(perc_effect)
 						reg[min_dist,max_dist].append(regulate)
-					except KeyError: print(gene_id,Pred[gene_id],chrm_ep,center,file=sys.stderr)
-				except KeyError: print(gene_id,chrm_ep,center)
+					except KeyError: pass#print(gene_id,Pred[gene_id],chrm_ep,center,file=sys.stderr)
+				except KeyError: pass#print(gene_id,chrm_ep,center)
 "precn = TP / (TP + FP)"
 "recll = TP / (TP + FN)"
 
