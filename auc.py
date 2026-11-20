@@ -1,7 +1,7 @@
 import glob
 import sys
 import argparse
-import numpt as np
+import numpy as np
 import sklearn.metrics as skm
 
 
@@ -33,10 +33,9 @@ Pred = {}
 all_raw_score, all_perc_score = [],[]
 files = glob.glob(f'scores/{args.name}.*.tsv')
 for file in files:
-	with open(f"scores/{file}",'r') as f: lines = f.readlines()
+	with open(f"{file}",'r') as f: lines = f.readlines()
 	for line in lines[:]:
 		gene_id, chrm_center, chrm_locus, raw_score, perc_score = line.split()
-		# print(line, raw_score, perc_score)
 		raw_score, perc_score = float(raw_score), float(perc_score)
 		chrm_ep,center = chrm_center.split(':')
 		center = int(center)
