@@ -4,13 +4,21 @@ import argparse
 import numpy as np
 import sklearn.metrics as skm
 
-rain = args.regulome
+parser = argparse.ArgumentParser(description="the script to predict mutation effect on the gene expression")
+parser.add_argument('--regulome','-r', default="peps/EP.GRCh38-c.tsv", help="the path to files with p-e pairs")
+parser.add_argument('--name','-n', default="alpha2_score", help="the base file name for generated predictionss")
+parser.add_argument('--min_dists','-m', nargs='*', type=int,default=[0], help="the base file name for generated predictionss")
+parser.add_argument('--max_dists','-M', nargs='*', type=int,default=[2500000], help="the base file name for generated predictionss")
+parser.add_argument('--path','-p', default="scores", help="the file name for the output")
+args=parser.parse_args()
+
+train = args.regulome
 predictions = args.name
 min_dists = args.min_dists
 max_dists = args.max_dists
 ln_dists = len(min_dists)
-
 assert len(min_dists) == len(max_dists)
+dists_list = [(min_dists[i],max_dists[i]) for i in range(ln_dists)]
 
 dists_list = [(min_dists[i],max_dists[i]) for i in range(ln_dists)]
 Train,Dists = {},{}
@@ -32,7 +40,7 @@ for line in lines[1:]:
 
 Pred = {}
 all_raw_score, all_perc_score = [],[]
-files = glob.glob(f'scores/{args.name}.*.tsv')
+files = glob.glob(f'{args.path}/{args.name}.*.tsv')
 for file in files:
 	with open(f"{file}",'r') as f: lines = f.readlines()
 	for line in lines[:]:
@@ -59,7 +67,7 @@ TP_all = []
 FN_all = []
 FP_all = []
 
-out=open(f"scores/{args.out}.tsv",'w')
+out=open(f"{args.path}/{args.out}.tsv",'w')
 out.write(f"metric\tdistances\traw_variant_scoring\n")
 reg = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
 score_raw = { (min_dists[i],max_dists[i]):[] for i in range(ln_dists) }
@@ -87,6 +95,6 @@ for i,(min_dist,max_dist) in enumerate(dists_list):
 	precision_raw, recall_raw, thresholds_raw = skm.precision_recall_curve(reg,prc_raw)
 	precision_perc, recall_perc, thresholds_perc = skm.precision_recall_curve(reg,prc_perc)
 	auc_raw, auc_perc = skm.auc(recall_raw,precision_raw),skm.auc(recall_perc,precision_perc)
-	with open(f"scores/{args.out}.tsv") as f:
+	with open(f"{args.path}/{args.out}.tsv") as f:
 		f.write(f"metric\traw_variant_scoring\tpercentile_variant_scoring}\n")
 		f.write(f"auc\t{auc_raw}\t{auc_perc}\n")
